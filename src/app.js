@@ -33,7 +33,6 @@ io.on("connection", (socket) => {
 
   socket.on("new-message", async (data) => {
     const { stat, result } = await chatManager.newMessage(data);
-    //mando result.result porque lo recibe asi desde el find()
     io.emit("messages", result.result);
   });
 });
@@ -42,7 +41,7 @@ app.set("views", __dirname + "/views");
 app.set("view engine", "handlebars");
 app.use(express.static(__dirname + "/public"));
 
-//midle para recibir io desde el router
+
 app.use((req, res, next) => {
   req.io = io;
   next();
