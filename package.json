@@ -2,7 +2,7 @@
   "name": "entrega1",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon src/app.js"
@@ -12,11 +12,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "express-handlebars": "^6.0.6",
-    "mongoose": "^7.0.3",
+    "express-handlebars": "^6.0.7",
+    "mongoose": "^6.9.0",
     "nodemon": "^2.0.20",
-    "socket.io": "^4.6.1",
-    "uuid": "^9.0.0"
+    "socket.io": "^4.5.4"
   }
 }
