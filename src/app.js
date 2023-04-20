@@ -1,62 +1,51 @@
-import express from "express";
+import express, { urlencoded } from "express";
+import handlebars from "express-handlebars";
 import { Server } from "socket.io";
-import { engine } from "express-handlebars";
-import viewsRoute from "./routes/chat.routes.js";
-import messageRoute from "./routes/messages.routes.js";
-import { messageModel } from "./models/chat.model.js";
-
 import mongoose from "mongoose";
-import * as dotenv from "dotenv";
+import __dirname from "./utils.js";
+import productsRouter from "./routes/products.router.js";
+import cartsRouter from "./routes/carts.router.js";
+import viewRouter from "./routes/views.router.js";
+import ChatManager from "./dao/db-managers/chat.manager.js";
 
 const app = express();
-const PORT = 3000;
-dotenv.config();
+app.use(urlencoded({ extended: true }));
+app.engine("handlebars", handlebars.engine());
 
-const messages = [];
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-const httpServer = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log("iniciado con socket.io");
-});
-
-const socketServer = new Server(httpServer);
-app.engine("handlebars", engine());
-app.set("view engine", "handlebars");
-app.set("views", "./src/views");
-app.use(express.static("public"));
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
-app.post("/socketMessage", (req, res) => {
-  const { message } = req.body;
-  socketServer.emit("message", message);
-
-  res.send("ok");
-});
-app.use("/chat", viewsRoute);
-app.use("/messages", messageRoute);
-
-socketServer.on("connection", (socket) => {
-  console.log("Nuevo cliente conectado!");
-  socket.on("new-user", (data) => {
-    socket.user = data.user;
-    socket.id = data.id;
-    socketServer.emit("new-user-connected", {
-      user: socket.user,
-      id: socket.id,
-    });
-  });
-  socket.on("message", (data) => {
-    messages.push(data);
-    socketServer.emit("messageLogs", messages);
-    messageModel.create(data);
-  });
-});
+const chatManager = new ChatManager();
 
 mongoose
     .connect("mongodb+srv://burdio:7654321@cluster0.pzcooec.mongodb.net/chat?retryWrites=true&w=majority")
     .then((conn) => {
         console.log("Conected to MongoDB!!");
 });
+
+const httpServer = app.listen(8080, () => {
+  console.log("Server listening on port 8080");
+});
+
+const io = new Server(httpServer);
+
+io.on("connection", (socket) => {
+  console.log("New client connected.");
+
+  socket.on("new-message", async (data) => {
+    const { stat, result } = await chatManager.newMessage(data);
+    //mando result.result porque lo recibe asi desde el find()
+    io.emit("messages", result.result);
+  });
+});
+
+app.set("views", __dirname + "/views");
+app.set("view engine", "handlebars");
+app.use(express.static(__dirname + "/public"));
+
+//midle para recibir io desde el router
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+app.use("/products", productsRouter);
+app.use("/carts", cartsRouter);
+app.use("/", viewRouter);
