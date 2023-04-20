@@ -21,7 +21,7 @@ app.use(
     resave: true,
     saveUninitialized: true,
     store: MongoStore.create({
-      mongoUrl: "mongodb+srv://burdio:7654321@cluster0.pzcooec.mongodb.net/chat?retryWrites=true&w=majority",
+      mongoUrl: "mongodb+srv://burdio:7654321@cluster0.pzcooec.mongodb.net/users?retryWrites=true&w=majority",
       mongoOptions: {
         useNewUrlParser: true,
         useUnifiedTopology: true,
@@ -50,7 +50,7 @@ server.on("error", (error) => console.log(`Error en servidor ${error}`));
 
 const environment = async () => {
   try {
-    await mongoose.connect("mongodb+srv://burdio:7654321@cluster0.pzcooec.mongodb.net/chat?retryWrites=true&w=majority");
+    await mongoose.connect("mongodb+srv://burdio:7654321@cluster0.pzcooec.mongodb.net/users?retryWrites=true&w=majority");
     console.log("Conectado a MongoDB");
   } catch (error) {
     console.log(`Error al conectar a MongoDB: ${error}`);
