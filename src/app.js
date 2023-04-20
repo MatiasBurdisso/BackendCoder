@@ -1,51 +1,60 @@
-import express, { urlencoded } from "express";
-import handlebars from "express-handlebars";
-import { Server } from "socket.io";
+import express from "express";
+import cookieParser from "cookie-parser";
+import session from "express-session";
+import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
-import __dirname from "./utils.js";
-import productsRouter from "./routes/products.router.js";
-import cartsRouter from "./routes/carts.router.js";
-import viewRouter from "./routes/views.router.js";
-import ChatManager from "./dao/db-managers/chat.manager.js";
+import { engine } from "express-handlebars";
+import loginRouter from "./routes/login.routes.js";
+import signupRouter from "./routes/signup.routes.js";
+import profileRouter from "./routes/profile.routes.js";
+import forgotRouter from "./routes/forgot.routes.js";
+
 
 const app = express();
-app.use(urlencoded({ extended: true }));
-app.engine("handlebars", handlebars.engine());
 
-const chatManager = new ChatManager();
+app.use(express.json());
+app.use(cookieParser());
 
-mongoose
-    .connect("mongodb+srv://burdio:7654321@cluster0.pzcooec.mongodb.net/chat?retryWrites=true&w=majority")
-    .then((conn) => {
-        console.log("Conected to MongoDB!!");
+app.use(
+  session({
+    secret: "coderhouse",
+    resave: true,
+    saveUninitialized: true,
+    store: MongoStore.create({
+      mongoUrl: "mongodb+srv://burdio:7654321@cluster0.pzcooec.mongodb.net/chat?retryWrites=true&w=majority",
+      mongoOptions: {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      },
+      ttl: 15,
+    }),
+  })
+);
+app.get("/", (req, res) => {
+  res.send("Hello World!");
 });
-
-const httpServer = app.listen(8080, () => {
-  console.log("Server listening on port 8080");
-});
-
-const io = new Server(httpServer);
-
-io.on("connection", (socket) => {
-  console.log("New client connected.");
-
-  socket.on("new-message", async (data) => {
-    const { stat, result } = await chatManager.newMessage(data);
-    //mando result.result porque lo recibe asi desde el find()
-    io.emit("messages", result.result);
-  });
-});
-
-app.set("views", __dirname + "/views");
+app.engine("handlebars", engine());
 app.set("view engine", "handlebars");
-app.use(express.static(__dirname + "/public"));
+app.set("views", "./src/views");
+app.use(express.static("public"));
+app.use("/login", loginRouter);
+app.use("/signup", signupRouter);
+app.use("/profile", profileRouter);
+app.use("/forgot", forgotRouter);
 
-//midle para recibir io desde el router
-app.use((req, res, next) => {
-  req.io = io;
-  next();
+const server = app.listen(8080, () => {
+  console.log("Server running on port " + 8080);
 });
 
-app.use("/products", productsRouter);
-app.use("/carts", cartsRouter);
-app.use("/", viewRouter);
+server.on("error", (error) => console.log(`Error en servidor ${error}`));
+
+const environment = async () => {
+  try {
+    await mongoose.connect("mongodb+srv://burdio:7654321@cluster0.pzcooec.mongodb.net/chat?retryWrites=true&w=majority");
+    console.log("Conectado a MongoDB");
+  } catch (error) {
+    console.log(`Error al conectar a MongoDB: ${error}`);
+  }
+};
+
+environment();
