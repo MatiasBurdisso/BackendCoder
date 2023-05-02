@@ -1,10 +1,13 @@
 import { Router } from "express";
-import userModel from "../model/users.js";
 
 const router = Router();
 
 router.get("/", (req, res) => {
-  res.render("profile", { title: "Login", styles: "css/profile.css" });
+  res.render("home", {});
+});
+
+router.get("/cart", (req, res) => {
+  res.render("carts", {});
 });
 
 export default router;

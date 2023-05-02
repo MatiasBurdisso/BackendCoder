@@ -1,42 +1,71 @@
 import { Router } from "express";
-import userModel from "../model/users.js";
-import { isValidPassword } from "../utils.js";
+import passport from "passport";
+import registroModel from "../models/registro.model.js";
+import { generateToken, authToken } from "../utils.js";
 
 const router = Router();
 
 router.get("/", (req, res) => {
-  res.render("login", { title: "Login", styles: "css/login.css" });
+  res.render("login", {});
 });
 
-router.post("/", async (req, res) => {
-  const { username, password } = req.body;
-  //console.log({ username, password });
-  try {
-    const response = await userModel.findOne({
-      email: username,
+router.post(
+  "/user",
+  passport.authenticate("login", { failureRedirect: "/faillogin" }),
+  async (req, res) => {
+    if (!req.user)
+      return res
+        .status(400)
+        .send({ status: "error", error: "Usuario no encontrado" });
+    req.session.user = {
+      firstName: req.user.firstName,
+      lastName: req.user.lastName,
+      email: req.user.email,
+      age: req.user.age,
+    };
+    req.session.admin = true;
+    const accessToken = generateToken({
+      firstName: req.user.firstName,
+      lastName: req.user.lastName,
+      email: req.user.email,
+      age: req.user.age,
     });
+    console.log(accessToken);
+    return res.status(200).send({ message: "success", accessToken });
+  }
+);
 
-    // console.log(password, response.password);
-    //const isValid = isValidPassword(password, response.password);
-    //console.log(isValid);
-    if (response) {
-      if (isValidPassword(password, response.password)) {
-        req.session.user = response;
-        res.status(200).json({ message: "success", data: response });
-      } else {
-        res.status(401).json({
-          message: "error",
-          data: "Error, por favor revisa tus credenciales.",
-        });
-      }
-    } else {
-      res.status(404).json({
-        message: "error",
-        data: "Algo ha pasado, consulta al administrador",
-      });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+router.get("/faillogin", async (req, res) => {
+  console.log("failed Strategy");
+  res.send({ error: "Failed Strategy" });
+});
+
+const auth = async (req, res, next) => {
+  if (await req.session?.user) {
+    return next();
+  } else {
+    return res.status(401).send("error de autenticación");
+  }
+};
+
+router.get("/products", auth, async (req, res) => {
+  if (await req.session.user) {
+    const userData = await registroModel.findOne({
+      email: req.session.user.email,
+    });
+    const { firstName, lastName } = userData;
+    res.render("products", { firstName, lastName });
   }
 });
+
+router.get("/logout", (req, res) => {
+  req.session.destroy((error) => {
+    if (error) {
+      res.status(401).send({ message: "ERROR" });
+    } else {
+      res.status(200).send({ message: "LogoutOK" });
+    }
+  });
+});
+
 export default router;
