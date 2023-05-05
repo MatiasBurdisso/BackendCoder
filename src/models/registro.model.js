@@ -21,6 +21,12 @@ const registroSchema = mongoose.Schema({
     type: String,
     require: true,
   },
+  rol: {
+    type: String,
+    required: true,
+    enum: ["user", "admin"],
+    default: "user",
+  },
 });
 
 const registroModel = mongoose.model(registroCollection, registroSchema);

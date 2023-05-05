@@ -68,4 +68,11 @@ router.get("/logout", (req, res) => {
   });
 });
 
+router.get("/current", async (req, res) => {
+  if (req.user) {
+    return res.send({ userInfo: req.user });
+  }
+  res.send("Usuario No Logueado");
+});
+
 export default router;
