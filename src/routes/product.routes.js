@@ -1,4 +1,6 @@
 import { Router } from "express";
+import {checkValidProductFields} from "../middlewares/validations.js";
+import {checkRole} from "../middlewares/validations.js";
 import ManagerMongoDb from "../dao/ManagerMongoDB.js";
 
 const router = Router();
@@ -17,7 +19,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", checkRole(["admin"]) ,async (req, res) => {
   const newProduct = {
     ...req.body,
   };
@@ -29,7 +31,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", checkRole(["admin","superadmin"]) ,async (req, res) => {
   const { id } = req.params;
   const product = req.body;
   try {
